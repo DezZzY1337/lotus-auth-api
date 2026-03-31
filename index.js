@@ -2,6 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
 
+// Проверка переменных окружения
+console.log('Environment check:', {
+    hasType: !!process.env.FIREBASE_TYPE,
+    hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+    hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+    hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+    hasDatabaseUrl: !!process.env.FIREBASE_DATABASE_URL
+});
+
 // Инициализация Firebase из отдельных переменных окружения Vercel
 const serviceAccount = {
     type: process.env.FIREBASE_TYPE || 'service_account',
@@ -10,14 +19,23 @@ const serviceAccount = {
     client_email: process.env.FIREBASE_CLIENT_EMAIL
 };
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL
-});
+let db;
+let app;
 
-const db = admin.database();
-const app = express();
+try {
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.FIREBASE_DATABASE_URL
+    });
+    
+    db = admin.database();
+    console.log('✅ Firebase initialized');
+} catch (error) {
+    console.error('❌ Firebase initialization failed:', error.message);
+    console.error('Check Environment Variables in Vercel Settings');
+}
 
+app = express();
 app.use(cors());
 app.use(express.json());
 
@@ -108,7 +126,11 @@ app.post('/api/heartbeat', async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: Date.now() });
+    res.json({ 
+        status: 'ok', 
+        timestamp: Date.now(),
+        firebase: !!db
+    });
 });
 
 // 404 handler
