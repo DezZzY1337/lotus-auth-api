@@ -39,7 +39,7 @@ app.use(cors());
 app.use(express.json());
 
 // Эндпоинты API
-app.post('/api/check-key', async (req, res) => {
+app.post('/check-key', async (req, res) => {
     const { key, hwid } = req.body;
     const keyId = key.replace(/-/g, '').toUpperCase();
     
@@ -63,7 +63,7 @@ app.post('/api/check-key', async (req, res) => {
     }
 });
 
-app.post('/api/activate', async (req, res) => {
+app.post('/activate', async (req, res) => {
     const { key, hwid } = req.body;
     const keyId = key.replace(/-/g, '').toUpperCase();
     const timestamp = Date.now();
@@ -81,7 +81,7 @@ app.post('/api/activate', async (req, res) => {
     }
 });
 
-app.post('/api/verify-hwid', async (req, res) => {
+app.post('/verify-hwid', async (req, res) => {
     const { hwid } = req.body;
     
     try {
@@ -105,7 +105,7 @@ app.post('/api/verify-hwid', async (req, res) => {
     }
 });
 
-app.post('/api/heartbeat', async (req, res) => {
+app.post('/heartbeat', async (req, res) => {
     const { hwid } = req.body;
     
     try {
