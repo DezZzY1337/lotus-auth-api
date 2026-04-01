@@ -26,6 +26,22 @@
     {
       "src": "/api/heartbeat",
       "dest": "api/heartbeat.js"
+    },
+    {
+      "src": "/api/list-keys",
+      "dest": "api/list-keys.js"
+    },
+    {
+      "src": "/api/revoke-key",
+      "dest": "api/revoke-key.js"
+    },
+    {
+      "src": "/api/user",
+      "dest": "api/user.js"
+    },
+    {
+      "src": "/api/list-users",
+      "dest": "api/list-users.js"
     }
   ]
 }

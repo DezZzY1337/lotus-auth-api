@@ -18,7 +18,6 @@ module.exports = async (req, res) => {
     // Парсим JSON или form-urlencoded
     let body = {};
     if (req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
-        // Парсим form-urlencoded
         let rawBody = '';
         req.on('data', chunk => { rawBody += chunk; });
         req.on('end', async () => {
@@ -28,11 +27,9 @@ module.exports = async (req, res) => {
         });
         return;
     } else if (typeof req.body === 'string') {
-        // Парсим JSON строку
         try {
             body = JSON.parse(req.body);
         } catch (e) {
-            // Пробуем как form-urlencoded
             const params = new URLSearchParams(req.body);
             body = Object.fromEntries(params.entries());
         }
@@ -41,15 +38,14 @@ module.exports = async (req, res) => {
     }
 
     async function processRequest(body) {
-        const { key, hwid } = body;
+        const { key } = body;
 
-        if (!key || !hwid) {
-            return res.status(400).json({ success: false, error: 'Ключ и HWID обязательны' });
+        if (!key) {
+            return res.status(400).json({ success: false, error: 'Ключ не указан' });
         }
 
         const keyId = key.replace(/-/g, '').toUpperCase();
         const db = getDb();
-        const timestamp = Date.now();
 
         try {
             // Проверяем существует ли ключ
@@ -60,31 +56,26 @@ module.exports = async (req, res) => {
                 return res.status(404).json({ success: false, error: 'Ключ не найден' });
             }
 
-            if (!keyData.is_active) {
-                return res.status(403).json({ success: false, error: 'Ключ отозван' });
+            // Получаем HWID для удаления из hwid_locks
+            const hwid = keyData.hwid;
+
+            // Отозываем ключ
+            await db.ref(`keys/${keyId}`).update({ is_active: false });
+
+            // Удаляем из hwid_locks если HWID существует
+            if (hwid) {
+                await db.ref(`hwid_locks/${hwid}`).remove();
             }
 
-            // Если ключ уже имеет HWID и он не совпадает
-            if (keyData.hwid && keyData.hwid !== hwid) {
-                return res.status(409).json({ success: false, error: 'Ключ уже активирован на другом устройстве' });
-            }
-
-            await db.ref(`keys/${keyId}`).update({ hwid, activated_at: timestamp });
-            await db.ref(`hwid_locks/${hwid}`).set({
-                key: keyId,
-                activated_at: timestamp,
-                last_seen: timestamp
-            });
-
-            res.json({ success: true, message: 'Ключ активирован', hwid: hwid });
+            res.json({ success: true, message: 'Ключ отозван' });
         } catch (error) {
-            console.error('activate error:', error);
+            console.error('revoke-key error:', error);
             res.status(500).json({ success: false, error: error.message });
         }
     }
 
     // Если body уже распарсен синхронно
-    if (body.key && body.hwid) {
+    if (body.key) {
         return processRequest(body);
     }
 };
